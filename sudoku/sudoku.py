@@ -566,3 +566,7 @@ class _DiagonalSudokuSolver(_SudokuSolver):
         are_blanks_filled[chosen_blank_index] = False
         board[row][col] = Sudoku._empty_cell_value
         return None
+
+class OddEvenSudoku(Sudoku):
+    def __init__(self, width: int = 3, height: Optional[int] = None, board: Optional[Iterable[Iterable[Union[int, None]]]] = None, difficulty: Optional[float] = None, seed: int = randrange(sys.maxsize)):
+        super().__init__(width=width, height=height, board=board, difficulty=difficulty, seed=seed)
