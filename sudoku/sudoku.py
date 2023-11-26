@@ -1,7 +1,7 @@
 from pickletools import float8
 from random import shuffle, seed as random_seed, randrange
 import sys
-from typing import Iterable, List, Optional, Tuple, Union, cast
+from typing import Iterable, List, Optional, Tuple, Union, cast, Literal
 
 
 class UnsolvableSudoku(Exception):
@@ -567,6 +567,7 @@ class _DiagonalSudokuSolver(_SudokuSolver):
         board[row][col] = Sudoku._empty_cell_value
         return None
 
+
 class OddEvenSudoku(Sudoku):
-    def __init__(self, width: int = 3, height: Optional[int] = None, board: Optional[Iterable[Iterable[Union[int, None]]]] = None, difficulty: Optional[float] = None, seed: int = randrange(sys.maxsize)):
-        super().__init__(width=width, height=height, board=board, difficulty=difficulty, seed=seed)
+    def __init__(self, size: int = 3, parity: Literal["even", "odd"] = "odd", board: Iterable[Iterable[int | None]] | None = None, difficulty: float | None = None, seed: int = randrange(sys.maxsize)):
+        super().__init__(width=size, height=size, board=board, difficulty=difficulty, seed=seed)
