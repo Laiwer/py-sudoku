@@ -2,6 +2,7 @@ from pickletools import float8
 from random import shuffle, seed as random_seed, randrange
 import sys
 from typing import Iterable, List, Optional, Tuple, Union, cast, Literal
+from copy import deepcopy
 
 
 class UnsolvableSudoku(Exception):
@@ -571,3 +572,97 @@ class _DiagonalSudokuSolver(_SudokuSolver):
 class OddEvenSudoku(Sudoku):
     def __init__(self, size: int = 3, parity: Literal["even", "odd"] = "odd", board: Iterable[Iterable[int | None]] | None = None, difficulty: float | None = None, seed: int = randrange(sys.maxsize)):
         super().__init__(width=size, height=size, board=board, difficulty=difficulty, seed=seed)
+
+        if difficulty is not None:
+            self.__difficulty = difficulty
+        
+        if board:
+            blank_count = 0
+            self.board: List[List[Union[int, None]]] = [
+                [cell for cell in row] for row in board]
+            for row in self.board:
+                for i in range(len(row)):
+                    if not row[i] in range(1, self.size + 1):
+                        row[i] = Sudoku._empty_cell_value
+                        blank_count += 1
+            if difficulty == None:
+                if self.validate():
+                    self.__difficulty = blank_count / \
+                        (self.size * self.size)
+                else:
+                    self.__difficulty = -2
+        
+        self.parity = parity
+        self.solved_board: Iterable[Iterable[int]] | None = self.solve().board
+
+    def difficulty(self, difficulty: float) -> 'OddEvenSudoku':
+        assert 0 < difficulty < 1, 'Difficulty must be between 0 and 1'
+        indices = list(range(self.size * self.size))
+        shuffle(indices)
+        problem_board = self.solve().board
+        self.solved_board = deepcopy(problem_board)
+        for index in indices[:int(difficulty * self.size * self.size)]:
+            row_index = index // self.size
+            col_index = index % self.size
+            problem_board[row_index][col_index] = Sudoku._empty_cell_value
+        return OddEvenSudoku(self.width, self.parity, problem_board, difficulty)
+
+    def show(self) -> None:
+        if self.__difficulty == -2:
+            print('Puzzle has no solution')
+        if self.__difficulty == -1:
+            print('Invalid puzzle. Please solve the puzzle (puzzle.solve()), or set a difficulty (puzzle.difficulty())')
+        if not self.board:
+            print('No solution')
+        print(self.__format_board_ascii())
+
+    def show_full(self) -> None:
+        print(self.__str__())
+
+    def __format_board_ascii(self) -> str:
+        table = ''
+        color = "4" if self.parity == "odd" else "10"
+        cell_length = len(str(self.size))
+        row_square = []
+        format_int = '{0:0' + str(cell_length) + 'd}'
+
+        for i, row in enumerate(self.board):
+            if i == 0:
+                table += ('+-' + '-' * (cell_length + 1) * self.width) * self.height + '+' + '\n'
+            
+            for x in range(len(row)):
+                if row[x] != Sudoku._empty_cell_value:
+                    if row[x] % 2 != 0 if self.parity == "odd" else row[x] % 2 == 0:
+                        row_square.append("\033[48;5;{}m\033[38;5;232m{}\033[0;0m".format(color, format_int.format(row[x])))
+                    else:
+                        row_square.append(format_int.format(row[x]))
+                else:
+                    if self.solved_board[i][x] % 2 != 0 if self.parity == "odd" else self.solved_board[i][x] % 2 == 0:
+                        row_square.append("\033[48;5;{}m\033[38;5;232m{}\033[0;0m".format(color, ' ' * cell_length))
+                    else:
+                        row_square.append(' ' * cell_length)
+            
+            table += (('| ' + '{} ' * self.width) * self.height + '|').format(*row_square)  + '\n'
+            row_square = []
+
+            if i == self.size - 1 or i % self.height == self.height - 1:
+                table += ('+-' + '-' * (cell_length + 1) * self.width) * self.height + '+' + '\n'
+        return table
+
+    def __str__(self) -> str:
+        if self.__difficulty == -2:
+            difficulty_str = 'INVALID PUZZLE (GIVEN PUZZLE HAS NO SOLUTION)'
+        elif self.__difficulty == -1:
+            difficulty_str = 'INVALID PUZZLE'
+        elif self.__difficulty == 0:
+            difficulty_str = 'SOLVED'
+        else:
+            difficulty_str = '{:.2f}'.format(self.__difficulty)
+        return '''
+------------------------------------
+{}x{} ({}x{}) ODD EVEN SUDOKU PUZZLE
+Difficulty: {}
+Parity: {}
+------------------------------------
+{}
+        '''.format(self.size, self.size, self.width, self.height, difficulty_str, self.parity.capitalize(), self.__format_board_ascii())
