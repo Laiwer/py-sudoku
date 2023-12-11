@@ -406,7 +406,7 @@ class DiagonalSudoku(Sudoku):
                 table += ('+-' + '-' * (cell_length + 1) * self.width) * self.height + '+' + '\n'
             
             for x in range(len(row)):
-                if x != Sudoku._empty_cell_value:
+                if row[x] != Sudoku._empty_cell_value:
                     if i == x:
                         row_square.append("\033[1m\033[4m{}\033[0m".format(format_int.format(row[x])))
                     elif self.diagonal_right_to_left[i][1] == x:
